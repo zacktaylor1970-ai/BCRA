@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presidente BCRA - Gestión Lumen</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #020617;
+            --card-bg: #ffffff;
+            --primary: #38bdf8;
+            --inf-color: #ef4444;
+            --growth-color: #10b981;
+            --des-color: #f59e0b;
+            --res-color: #8b5cf6;
+            --text-main: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            margin: 0;
+            color: var(--text-main);
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(rgba(2, 6, 23, 0.8), rgba(2, 6, 23, 0.8)),
+                url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v1H0zM0 0v40h1V0z' fill='%231e293b' fill-opacity='0.3'/%3E%3C/svg%3E");
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        header {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .logo-text { font-size: 2.2rem; font-weight: 900; margin: 0; letter-spacing: -1px; }
+        .logo-accent { color: var(--primary); }
+
+        .container { width: 95%; max-width: 1200px; margin: 25px auto; }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 18px;
+            border-radius: 18px;
+            color: #0f172a;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            cursor: pointer;
+            border-top: 5px solid #cbd5e1;
+            transition: 0.2s;
+        }
+
+        .kpi-card.inactive { opacity: 0.3; filter: grayscale(1); }
+        .kpi-title { font-size: 0.7rem; color: #64748b; font-weight: 800; text-transform: uppercase; }
+        .kpi-value { font-size: 1.8rem; font-weight: 900; margin: 5px 0; }
+
+        .main-layout { display: grid; grid-template-columns: 2.8fr 1.2fr; gap: 20px; }
+        @media (max-width: 1000px) { .main-layout { grid-template-columns: 1fr; } }
+
+        .chart-section {
+            background: white; padding: 20px; border-radius: 25px; height: 450px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+
+        .control-panel {
+            background: #1e293b; padding: 30px; border-radius: 25px;
+            display: flex; flex-direction: column; gap: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .tasa-number { font-size: 4rem; font-weight: 950; color: var(--primary); text-align: center; }
+
+        button.main-btn {
+            background: var(--primary); color: #0f172a; border: none; padding: 18px;
+            border-radius: 15px; font-weight: 900; font-size: 1.1rem; cursor: pointer; transition: 0.2s;
+        }
+
+        .shock-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        button.shock-btn {
+            color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px;
+            border-radius: 12px; font-weight: 800; font-size: 0.7rem; cursor: pointer; transition: 0.2s;
+        }
+        .btn-ajuste { background: #4b5563; }
+        .btn-ajuste:hover:not(:disabled) { background: #ef4444; }
+        .btn-exp { background: #1e3a8a; }
+        .btn-exp:hover:not(:disabled) { background: #10b981; }
+        
+        .btn-fmi { background: #facc15; color: #0f172a; grid-column: span 2; display: none; }
+
+        button.shock-btn:disabled { opacity: 0.3; cursor: allowed; }
+
+        input[type="range"] { width: 100%; -webkit-appearance: none; background: #334155; height: 8px; border-radius: 5px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 25px; height: 25px; background: var(--primary); border-radius: 50%; cursor: pointer; border: 2px solid white; }
+
+        .achievements-section {
+            margin-top: 25px; background: rgba(30, 41, 59, 0.5); padding: 20px;
+            border-radius: 25px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .achievements-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .achievement-badge {
+            background: #0f172a; padding: 10px 15px; border-radius: 12px;
+            font-size: 0.8rem; font-weight: 700; color: #475569; border: 1px solid #1e293b;
+            transition: 0.3s; opacity: 0.6;
+        }
+        .achievement-badge.unlocked {
+            background: var(--primary); color: #0f172a; border-color: white;
+            opacity: 1; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .tuerca-btn {
+            position: fixed; left: 20px; top: 50%; transform: translateY(-50%);
+            background: rgba(30, 41, 59, 0.8); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; z-index: 2000; transition: 0.3s;
+        }
+        .restart-menu {
+            position: fixed; left: -300px; top: 0; width: 250px; height: 100%;
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05); z-index: 2500;
+            padding: 40px 25px; display: flex; flex-direction: column; transition: 0.4s;
+        }
+        .restart-menu.open { left: 0; }
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 3000;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-content { background: white; color: #0f172a; padding: 35px; border-radius: 25px; max-width: 450px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<button class="tuerca-btn" onclick="toggleRestartMenu()">⚙️</button>
+
+<div class="restart-menu" id="restartMenu">
+    <button style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: #94a3b8; cursor: pointer;" onclick="toggleRestartMenu()">✕</button>
+    <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 30px; text-align: center;">OPCIONES</div>
+    <button style="background: var(--inf-color); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer;" onclick="reiniciarJuego()">🔄 REINICIAR</button>
+</div>
+
+<header>
+    <h1 class="logo-text">🏛️ PRESIDENTE <span class="logo-accent">BCRA</span></h1>
+    <div id="currentPeriod" style="color:var(--primary); font-weight: 800;">2001 - Q1</div>
+</header>
+
+<div class="container">
+    <div class="kpi-grid">
+        <div class="kpi-card" id="card-inf" onclick="toggleLine(0, this)" style="border-color: var(--inf-color)">
+            <div class="kpi-title">Inflación</div>
+            <div class="kpi-value" id="val-inf">2.0%</div>
+        </div>
+        <div class="kpi-card" id="card-growth" onclick="toggleLine(1, this)" style="border-color: var(--growth-color)">
+            <div class="kpi-title">PBI</div>
+            <div class="kpi-value" id="val-growth">+0.5%</div>
+        </div>
+        <div class="kpi-card" id="card-des" onclick="toggleLine(2, this)" style="border-color: var(--des-color)">
+            <div class="kpi-title">Desempleo</div>
+            <div class="kpi-value" id="val-des">7.0%</div>
+        </div>
+        <div class="kpi-card" id="card-usd" onclick="toggleLine(3, this)" style="border-color: var(--primary)">
+            <div class="kpi-title">Dólar (USD)</div>
+            <div class="kpi-value" id="val-usd">$1.00</div>
+        </div>
+        <div class="kpi-card" id="card-res" style="border-color: var(--res-color)">
+            <div class="kpi-title">Reservas (M)</div>
+            <div class="kpi-value" id="val-res">$20.000</div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div class="chart-section">
+            <canvas id="mainChart"></canvas>
+        </div>
+        <div class="control-panel">
+            <div style="text-align: center;">
+                <p class="kpi-title" style="color: #94a3b8;">Tasa de Interés Nominal</p>
+                <div class="tasa-number"><span id="tasaLabel">3.0</span>%</div>
+                <input type="range" id="tasaInput" min="0" max="100" value="3" step="0.5">
+            </div>
+            
+            <div class="shock-group">
+                <button class="shock-btn btn-ajuste" id="btnAjuste" onclick="queueAjuste()">⚡ AJUSTE</button>
+                <button class="shock-btn btn-exp" id="btnExp" onclick="queueExpansion()">💸 EXPANSIÓN</button>
+                <button class="shock-btn btn-fmi" id="btnFMI" onclick="queueFMI()">🆘 RESCATE FMI</button>
+            </div>
+            
+            <button class="main-btn" onclick="nextQuarter()">PASAR TRIMESTRE ➔</button>
+        </div>
+    </div>
+
+    <div class="achievements-section">
+        <div class="achievements-grid" id="achievementsList">
+            <div class="achievement-badge" id="ach-1">🎯 Inflación < 10%</div>
+            <div class="achievement-badge" id="ach-2">🚀 Tigre (+5%)</div>
+            <div class="achievement-badge" id="ach-3">🛡️ Pleno Empleo</div>
+            <div class="achievement-badge" id="ach-4">⚖️ Estabilidad</div>
+            <div class="achievement-badge" id="ach-5">💎 Super-Peso</div>
+        </div>
+    </div>
+</div>
+
+<div id="eventModal" class="modal-overlay">
+    <div class="modal-content">
+        <h2 id="eventTitle"></h2>
+        <p id="eventDesc"></p>
+        <button id="modalBtn" onclick="closeModal()" style="background:#0f172a; color:white; border:none; padding:15px; border-radius:12px; cursor:pointer; width:100%; font-weight:bold; margin-top:20px;">ENTENDIDO</button>
+    </div>
+</div>
+
+<script>
+    let year = 2001, quarter = 1, totalQuarters = 1;
+    let model = { inf: 2.0, tasa: 3.0, des: 7.0, growth: 0.5, usd: 1.00, res: 20000 };
+    let unlockedAchievements = [];
+    let shockCooldown = 0;
+    
+    let pendingPolicyType = null; 
+    let deferredImpact = 0;      
+    let deferredNextImpact = 0;  
+
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ["2001-Q1"],
+            datasets: [
+                { label: 'Inf', data: [2.0], borderColor: '#f43f5e', tension: 0.4 },
+                { label: 'PBI', data: [0.5], borderColor: '#10b981', tension: 0.4 },
+                { label: 'Des', data: [7.0], borderColor: '#f59e0b', tension: 0.4 },
+                { label: 'USD', data: [1.00], borderColor: '#38bdf8', tension: 0.4, yAxisID: 'y1' }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y1: { position: 'right' } }, plugins: { legend: { display: false } } }
+    });
+
+    const slider = document.getElementById('tasaInput');
+    slider.oninput = () => document.getElementById('tasaLabel').innerText = parseFloat(slider.value).toFixed(1);
+
+    function toggleRestartMenu() { document.getElementById('restartMenu').classList.toggle('open'); }
+    function reiniciarJuego() { location.reload(); }
+
+    function queueAjuste() {
+        if(shockCooldown > 0) return;
+        pendingPolicyType = "ajuste";
+        setCooldown();
+        triggerEvent("📉 AJUSTE PROGRAMADO", "T1: Decisión tomada. Nada cambia aún. En el siguiente trimestre (T2) vendrá la crisis.");
+    }
+
+    function queueExpansion() {
+        if(shockCooldown > 0) return;
+        pendingPolicyType = "expansion";
+        setCooldown();
+        triggerEvent("🚀 EXPANSIÓN PROGRAMADA", "T1: Decisión tomada. Nada cambia aún. En el siguiente trimestre (T2) vendrá el boom.");
+    }
+
+    function queueFMI() {
+        pendingPolicyType = "fmi";
+        document.getElementById('btnFMI').style.display = 'none';
+        triggerEvent("🆘 TRATATIVAS FMI", "Fondos agendados. El impacto del ajuste comenzará en el próximo trimestre (T2).");
+    }
+
+    function setCooldown() {
+        shockCooldown = 4;
+        document.getElementById('btnAjuste').disabled = true;
+        document.getElementById('btnExp').disabled = true;
+    }
+
+    function nextQuarter() {
+        let currentEffectOnGrowth = deferredImpact; 
+        deferredImpact = deferredNextImpact;       
+        deferredNextImpact = 0;                   
+
+        if(pendingPolicyType === "ajuste") {
+            model.inf -= 12; model.res += 8000;
+            deferredImpact = -10;       
+            deferredNextImpact = 15;    
+            pendingPolicyType = null;
+        } else if(pendingPolicyType === "expansion") {
+            model.inf += 15; model.res -= 10000;
+            deferredImpact = 10;        
+            deferredNextImpact = -12;   
+            pendingPolicyType = null;
+        } else if(pendingPolicyType === "fmi") {
+            model.res += 15000; model.inf -= 12;
+            deferredImpact = -10; 
+            deferredNextImpact = 15;
+            shockCooldown = 4;
+            document.getElementById('btnAjuste').disabled = true;
+            document.getElementById('btnExp').disabled = true;
+            pendingPolicyType = null;
+        }
+
+        quarter++; totalQuarters++; if(quarter > 4) { quarter = 1; year++; }
+        document.getElementById('currentPeriod').innerText = `${year} - Q${quarter}`;
+        
+        if(shockCooldown > 0) {
+            shockCooldown--;
+            if(shockCooldown === 0) {
+                document.getElementById('btnAjuste').disabled = false;
+                document.getElementById('btnExp').disabled = false;
+            }
+        }
+
+        let tasaNominal = parseFloat(slider.value);
+        model.inf -= (tasaNominal - (model.inf * 3.5)) / 15;
+        if (model.inf < 0 && tasaNominal === 0) model.inf += 3.5;
+        if(model.inf < -15) model.inf = -15;
+
+        model.growth = (2.0 - (tasaNominal / 15) + (Math.random() * 0.8 - 0.4)) + currentEffectOnGrowth;
+
+        model.des = Math.max(2.0, Math.min(50, model.des - (model.growth - 0.3) * 0.3));
+        model.res -= (model.inf * 50); 
+        if(model.res < 0) model.res = 0;
+
+        // LÓGICA DE RESERVAS Y DÓLAR PARA LUMEN
+        let confidenceFactor = 0;
+        if (model.res < 5000) {
+            confidenceFactor = 0.45; // Pánico: el dólar vuela
+        } else if (model.res < 10000) {
+            confidenceFactor = 0.15; // Alerta: presión extra
+        } else {
+            confidenceFactor = 0;    // Estabilidad: solo inflación
+        }
+
+        let dollarPressure = (model.inf / 60) + confidenceFactor;
+        model.usd *= (1 + dollarPressure);
+
+        document.getElementById('btnFMI').style.display = (model.res < 3000 && !pendingPolicyType) ? 'block' : 'none';
+
+        checkAchievements();
+        checkHistoricalEvents(year, quarter);
+
+        chart.data.labels.push(`${year}-Q${quarter}`);
+        chart.data.datasets[0].data.push(model.inf.toFixed(2));
+        chart.data.datasets[1].data.push(model.growth.toFixed(2));
+        chart.data.datasets[2].data.push(model.des.toFixed(2));
+        chart.data.datasets[3].data.push(model.usd.toFixed(2));
+        if(chart.data.labels.length > 20) { chart.data.labels.shift(); chart.data.datasets.forEach(d => d.data.shift()); }
+        chart.update('none'); updateUI();
+    }
+
+    function checkAchievements() {
+        const check = (id, cond, t) => { if(cond && !unlockedAchievements.includes(id)) { unlockedAchievements.push(id); document.getElementById('ach-'+id).classList.add('unlocked'); triggerEvent("🏆 HITO", t); }};
+        check(1, model.inf < 2.5 && model.inf > 0, "Estabilizador.");
+        check(2, model.growth > 5, "Milagro Económico.");
+        check(3, model.des < 5, "Pleno Empleo.");
+    }
+
+    function checkHistoricalEvents(y, q) {
+        if(y === 2006 && q === 1) triggerEvent("Boom de Soja", "Crecimiento internacional.");
+        if(y === 2020 && q === 1) { triggerEvent("Pandemia", "Recesión profunda."); model.growth -= 18; }
+    }
+
+    function triggerEvent(title, desc) {
+        document.getElementById('eventTitle').innerText = title;
+        document.getElementById('eventDesc').innerText = desc;
+        document.getElementById('eventModal').style.display = 'flex';
+    }
+
+    function updateUI() {
+        document.getElementById('val-inf').innerText = model.inf.toFixed(2) + "%";
+        document.getElementById('val-growth').innerText = (model.growth >= 0 ? "+" : "") + model.growth.toFixed(2) + "%";
+        document.getElementById('val-des').innerText = model.des.toFixed(2) + "%";
+        document.getElementById('val-usd').innerText = "$" + model.usd.toFixed(2);
+        document.getElementById('val-res').innerText = "$" + Math.floor(model.res).toLocaleString();
+    }
+
+    function toggleLine(idx, el) { chart.isDatasetVisible(idx) ? chart.hide(idx) : chart.show(idx); el.classList.toggle('inactive'); }
+    function closeModal() { document.getElementById('eventModal').style.display = 'none'; }
+    function toggleRestartMenu() { document.getElementById('restartMenu').classList.toggle('open'); }
+</script>
+</body>
+</html>
