@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Presidente BCRA - Gestión Lumen</title>
-<link rel="icon" type="image/png" href="icono.png">
 
-<link rel="apple-touch-icon" href="icono.png">
+    <link rel="icon" type="image/png" href="icono.png?v=1">
+    
+    <link rel="apple-touch-icon" href="icono.png?v=1">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BCRA Game">
 
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BCRA Game">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -333,14 +336,13 @@
         model.res -= (model.inf * 50); 
         if(model.res < 0) model.res = 0;
 
-        // LÓGICA DE RESERVAS Y DÓLAR PARA LUMEN
         let confidenceFactor = 0;
         if (model.res < 5000) {
-            confidenceFactor = 0.45; // Pánico: el dólar vuela
+            confidenceFactor = 0.45; 
         } else if (model.res < 10000) {
-            confidenceFactor = 0.15; // Alerta: presión extra
+            confidenceFactor = 0.15; 
         } else {
-            confidenceFactor = 0;    // Estabilidad: solo inflación
+            confidenceFactor = 0;    
         }
 
         let dollarPressure = (model.inf / 60) + confidenceFactor;
